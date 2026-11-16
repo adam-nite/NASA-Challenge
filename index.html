@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Trend Detective, 2026 NASA Space Apps Challenge, challenge "Be an Earth System Trend Detective".
+  AI DISCLOSURE: The code, interface text and documentation in this file were generated with the assistance of
+  Claude (Anthropic), an AI (SI) tool, and then tested and reviewed by the team.
+  Data: NASA POWER (NASA Langley Research Center), https://power.larc.nasa.gov
+-->
+<head>
+<meta charset="utf-8">
+<meta name="ai-generated" content="Code and text generated with the assistance of Claude (Anthropic), an AI tool; reviewed by the team.">
+<meta name="generator" content="Claude (Anthropic) AI assistance">
+<meta name="description" content="Trend Detective: tests whether NASA Earth science variables show a statistically significant trend. Data: NASA POWER, 1981-2025.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trend Detective | Earth system trend analysis with NASA data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<script src="plotly.min.js"></script>
+<script>
+/* Fallback: if the local copy of Plotly is missing, load the same version from a public CDN. */
+if (typeof Plotly === "undefined") { document.write('<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"><\/script>'); }
+</script>
+<script>
+Plotly.setPlotConfig({topojsonURL:"./"});
+/* Fallback: if the local base map file is missing, use Plotly's public copy. */
+fetch("world_50m.json",{method:"HEAD"}).then(function(r){ if(!r.ok) Plotly.setPlotConfig({topojsonURL:"https://cdn.plot.ly/"}); }).catch(function(){ Plotly.setPlotConfig({topojsonURL:"https://cdn.plot.ly/"}); });
+</script>
+<style>
+  :root { --black:#000000; --ink:#1b1b1b; --muted:#5c5c5c; --line:#d6d7d9; --bg:#f6f6f6; --card:#ffffff;
+          --blue:#0b3d91; --blue-dark:#082d6b; --red:#fc3d21; --up:#d92d14; --down:#0b3d91; --mix:#000000;
+          --sans:"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif; --mono:"DM Mono", "SFMono-Regular", Menlo, Consolas, monospace; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.55 var(--sans); color:var(--ink); background:var(--bg); }
+  .eyebrow { font:500 12px/1.3 var(--mono); letter-spacing:.09em; text-transform:uppercase; }
+  header { background:var(--black); color:#fff; border-bottom:4px solid var(--red); }
+  header .in { max-width:1080px; margin:0 auto; padding:26px 16px 28px; }
+  header .eyebrow { color:#b9bcc2; margin-bottom:10px; }
+  header h1 { margin:0 0 8px; font-size:34px; line-height:1.15; font-weight:700; letter-spacing:-.01em; }
+  header p { margin:0; color:#d6d7d9; max-width:720px; }
+  main { max-width:1080px; margin:0 auto; padding:22px 16px 40px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:4px; padding:20px; margin-bottom:18px; }
+  .card > .eyebrow { color:var(--up); margin-bottom:6px; }
+  h2 { margin:0 0 4px; font-size:21px; font-weight:700; letter-spacing:-.005em; }
+  h3 { margin:18px 0 8px; font-size:16px; font-weight:600; }
+  .sub { color:var(--muted); margin:0 0 14px; font-size:14.5px; max-width:780px; }
+  .row { display:flex; flex-wrap:wrap; gap:14px; }
+  .row > div { flex:1 1 200px; min-width:0; }
+  label { display:block; font:500 12px/1.3 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  label.plain { font:400 14.5px/1.4 var(--sans); letter-spacing:0; text-transform:none; color:var(--ink); }
+  select, input[type=text], input[type=number] { width:100%; padding:10px 11px; border:1px solid #a9aeb1; border-radius:3px; font:inherit; background:#fff; color:var(--ink); }
+  select:focus, input:focus, button:focus-visible { outline:3px solid #7aa7e8; outline-offset:1px; }
+  button { font:600 15px/1.2 var(--sans); padding:11px 16px; border-radius:3px; border:1px solid var(--blue); background:var(--blue); color:#fff; cursor:pointer; }
+  button:hover { background:var(--blue-dark); }
+  button.ghost { background:#fff; color:var(--blue); }
+  button.ghost:hover { background:#eef3fb; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .chips { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .chip, .chip:hover { text-align:left; background:#fff; color:var(--ink); border:1px solid var(--line); padding:11px 13px; font-weight:400; line-height:1.4; }
+  .chip:hover { border-color:var(--blue); }
+  .chip.on { border-color:var(--blue); box-shadow:inset 4px 0 0 var(--blue); background:#f3f6fb; }
+  .chip b { display:block; font-weight:600; }
+  .chip span { font-size:13.5px; color:var(--muted); font-weight:400; }
+  .chip b span { font-family:var(--mono); font-size:12.5px; }
+  .tabs { display:flex; gap:0; flex-wrap:wrap; margin:26px 0 0; border-bottom:1px solid var(--line); }
+  .tabs button, .tabs button:hover { background:transparent; color:var(--muted); border:0; border-bottom:4px solid transparent; border-radius:0; padding:12px 16px; font-weight:600; }
+  .tabs button:hover { color:var(--ink); }
+  .tabs button.on { color:var(--ink); border-bottom-color:var(--red); }
+  .tabs + .card, .pane { border-top:0; border-radius:0 0 4px 4px; }
+  .verdict { border-left:6px solid var(--muted); background:#f6f6f6; padding:14px 16px; border-radius:0 3px 3px 0; margin:14px 0; }
+  .verdict.up { border-color:var(--up); } .verdict.down { border-color:var(--down); } .verdict.none { border-color:#8d9297; } .verdict.mix { border-color:var(--mix); }
+  .verdict .big { font-size:19px; font-weight:700; margin-bottom:2px; }
+  table { border-collapse:collapse; width:100%; font-size:14.5px; }
+  th, td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font:500 11.5px/1.3 var(--mono); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--ink); }
+  td.num { font-family:var(--mono); font-size:14px; white-space:nowrap; }
+  td.num .note { font-family:var(--mono); white-space:normal; }
+  .scroll { overflow-x:auto; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:760px) { .two { grid-template-columns:1fr; } header h1 { font-size:28px; } td.num { white-space:normal; }
+    table.st tr:first-child { display:none; } table.st tr { display:block; padding:10px 0; border-bottom:1px solid var(--line); }
+    table.st td { display:block; border:0; padding:2px 0; } table.st td:first-child { font-weight:600; } }
+  .note { font-size:13.5px; color:var(--muted); }
+  .err { color:var(--up); font-weight:600; }
+  .hide { display:none; }
+  .pill { display:inline-block; font:500 12px/1.3 var(--mono); letter-spacing:.04em; padding:4px 9px; border-radius:2px; background:#e9ecef; color:var(--ink); margin:0 6px 6px 0; }
+  .sw { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:7px; vertical-align:-1px; }
+  details { margin-top:12px; } summary { cursor:pointer; font-weight:600; font-size:14.5px; color:var(--blue); }
+  progress { width:100%; height:8px; accent-color:var(--blue); }
+  footer { background:var(--black); color:#b9bcc2; font-size:13.5px; }
+  footer .in { max-width:1080px; margin:0 auto; padding:20px 16px 26px; }
+  footer p { margin:0 0 6px; max-width:860px; }
+  footer a { color:#fff; }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <div class="eyebrow">2026 NASA Space Apps Challenge &nbsp;/&nbsp; Be an Earth System Trend Detective</div>
+  <h1>Trend Detective</h1>
+  <p>Select a location and a variable. The tool retrieves monthly NASA data for 1981&ndash;2025, plots the time series, estimates the rate of change and tests whether the trend is statistically significant.</p>
+</div></header>
+<main>
+
+<div class="card">
+  <div class="eyebrow">Worked examples</div>
+  <h2>Run an example analysis</h2>
+  <p class="sub">Each example retrieves the data from NASA and runs the complete analysis.</p>
+  <div class="row" id="demos"></div>
+</div>
+
+<div class="card">
+  <div class="eyebrow">Set up</div>
+  <h2>Define your own analysis</h2>
+  <p class="sub">Three choices narrow the list of variables to those most relevant to your question.</p>
+  <div class="row">
+    <div>
+      <label for="place">1. Location</label>
+      <select id="place"></select>
+      <div id="customBox" class="row hide" style="margin-top:10px">
+        <div><label for="clat">Latitude (&deg;N)</label><input id="clat" type="number" step="0.01" value="42.36"></div>
+        <div><label for="clon">Longitude (&deg;E)</label><input id="clon" type="number" step="0.01" value="-71.06"></div>
+      </div>
+    </div>
+    <div>
+      <label for="kind">2. Type of environment</label>
+      <select id="kind"></select>
+    </div>
+    <div>
+      <label for="topic">3. Topic</label>
+      <select id="topic"></select>
+    </div>
+  </div>
+  <h3>Suggested variables</h3>
+  <p class="sub" id="whyText"></p>
+  <div class="chips" id="chips"></div>
+  <details><summary>Choose from all 23 variables</summary>
+    <div style="margin-top:8px"><select id="allVars" aria-label="All variables"></select></div>
+  </details>
+</div>
+
+<div class="tabs">
+  <button id="tab-one" class="on" onclick="showTab('one')">Single location</button>
+  <button id="tab-two" onclick="showTab('two')">Two-region comparison</button>
+  <button id="tab-map" onclick="showTab('map')">Regional map</button>
+  <button id="tab-own" onclick="showTab('own')">Import data</button>
+  <button id="tab-how" onclick="showTab('how')">Method</button>
+</div>
+
+<div id="pane-one" class="card pane">
+  <h2>Single-location analysis</h2>
+  <p class="sub">Direction, rate and statistical significance of the change in the selected variable at the selected location.</p>
+  <button id="runOne" onclick="runOne()">Run analysis</button>
+  <div id="oneOut"></div>
+</div>
+
+<div id="pane-two" class="card pane hide">
+  <h2>Two-region comparison</h2>
+  <p class="sub">A variable can increase in one region and decrease in another. This view applies the same tests to two locations.</p>
+  <div class="row">
+    <div><label for="placeA">Region A</label><select id="placeA"></select></div>
+    <div><label for="placeB">Region B</label><select id="placeB"></select></div>
+  </div>
+  <p class="note">Both regions use the variable selected above. The regional map can identify contrasting locations.</p>
+  <button id="runTwo" onclick="runTwo()">Compare regions</button>
+  <div id="twoOut"></div>
+</div>
+
+<div id="pane-map" class="card pane hide">
+  <h2>Regional map</h2>
+  <p class="sub">Tests a grid of points centred on the selected location and shows where the variable is increasing, where it is decreasing, and where the trend is significant.</p>
+  <div class="row">
+    <div><label for="span">Extent</label>
+      <select id="span"><option value="8">Local (about 900 km)</option><option value="20" selected>Regional (about 2,200 km)</option><option value="50">Continental (about 5,500 km)</option></select></div>
+    <div><label for="grid">Grid</label>
+      <select id="grid"><option value="4">4 &times; 4 (16 points)</option><option value="5" selected>5 &times; 5 (25 points)</option><option value="7">7 &times; 7 (49 points)</option></select></div>
+  </div>
+  <p></p>
+  <button id="runMap" onclick="runMap()">Run regional scan</button>
+  <div id="mapOut"></div>
+</div>
+
+<div id="pane-own" class="card pane hide">
+  <h2>Import a time series</h2>
+  <p class="sub">Analyse data from other NASA missions and models, including MODIS, OMI, AIRS, GPM and GLDAS. In NASA Giovanni, select &ldquo;Time Series, Area-Averaged&rdquo;, plot the variable and download the CSV file. Any CSV file with a date in the first column and a value in the second can be used.</p>
+  <div class="row">
+    <div><label for="ownName">Variable name</label><input id="ownName" type="text" placeholder="e.g. Tropospheric NO2 over Delhi (OMI)"></div>
+    <div><label for="ownFile">CSV file</label><input id="ownFile" type="file" accept=".csv,.txt"></div>
+  </div>
+  <p></p>
+  <button onclick="runOwn()">Analyse file</button>
+  <div id="ownOut"></div>
+</div>
+
+<div id="pane-how" class="card pane hide">
+  <h2>Method</h2>
+  <p class="sub">The same procedure is applied to every variable and location.</p>
+  <div class="scroll"><table class="st">
+    <tr><th>Step</th><th>Procedure</th><th>Reason</th></tr>
+    <tr><td>1.&nbsp;Data</td><td>Monthly values for 1981&ndash;2025 at the selected coordinates, from the NASA POWER service. Meteorological variables are from the MERRA-2 reanalysis. Solar radiation and cloud variables are from CERES satellite products (from 1984). Aerosol and UV variables begin in 2001.</td><td>A record of several decades is needed to separate a trend from year-to-year variability.</td></tr>
+    <tr><td>2.&nbsp;Seasonal cycle</td><td>The long-term mean for each calendar month is subtracted from every value for that month, giving monthly anomalies.</td><td>The seasonal cycle is usually much larger than the trend and would obscure it.</td></tr>
+    <tr><td>3.&nbsp;Annual values</td><td>One value is computed for each complete calendar year (a mean, or a total for counts such as frost days).</td><td>Annual values are less serially correlated than monthly values, as the tests assume.</td></tr>
+    <tr><td>4.&nbsp;Rate of change</td><td>Sen&rsquo;s slope (the median of the slopes between all pairs of years) and an ordinary least-squares fit with a 95% confidence interval.</td><td>Sen&rsquo;s slope is robust to outliers. The two estimates serve as a check on each other.</td></tr>
+    <tr><td>5.&nbsp;Significance</td><td>Mann-Kendall test and a two-sided t-test on the least-squares slope. A trend is reported as significant only if both give p&nbsp;&lt;&nbsp;0.05.</td><td>p&nbsp;&lt;&nbsp;0.05 means that a trend at least this strong would be expected less than 5% of the time if no real trend existed.</td></tr>
+    <tr><td>6.&nbsp;Diagnostics</td><td>Lag-1 autocorrelation of the residuals is calculated, and a note is shown when it exceeds 0.4.</td><td>Serial correlation reduces the effective sample size and makes p-values too small.</td></tr>
+  </table></div>
+  <h3>Limitations</h3>
+  <p class="note">The data are gridded model and satellite products with a resolution of roughly 50&nbsp;km or coarser, not station measurements. Only linear trends are tested. A significant trend shows that a change occurred; it does not identify the cause. When many grid points are tested, about 1 in 20 is expected to appear significant by chance, so isolated significant points should be interpreted with caution. Precipitation and soil-moisture trends from a reanalysis are less certain than temperature trends and should be confirmed with satellite precipitation data (GPM) using the Import data tab.</p>
+  <h3>Verification</h3>
+  <p class="note">The statistical routines were checked against SciPy (linregress, kendalltau and theilslopes) on a test series.</p>
+</div>
+
+</main>
+<footer><div class="in">
+  <p>Data: NASA Langley Research Center (LaRC) POWER Project, funded through the NASA Earth Science Directorate Applied Science Program. Meteorology from MERRA-2 (NASA GMAO); radiation and clouds from CERES.</p>
+  <p>Built for the 2026 NASA Space Apps Challenge. This is a participant project, not an official NASA product, and NASA does not endorse it.</p>
+  <p><b>AI disclosure:</b> the code, interface text and documentation were generated with the assistance of Claude (Anthropic), an AI (SI) tool, and then tested and reviewed by the team. The statistical routines were checked against SciPy. The variable suggestions are rule-based, not generated by AI at run time.</p>
+  <p>Charts: Plotly.js (MIT licence). Base map: Natural Earth (public domain), supplied through Plotly. Fonts: Inter and DM Mono (SIL Open Font License), via Google Fonts.</p>
+</div></footer>
+<script>
+// ---------- Catalog ----------
+const VARS = {
+  T2M:{n:"Air temperature", u:"°C", d:"Average air temperature 2 metres above the ground."},
+  T2M_MAX:{n:"Hottest temperature", u:"°C", d:"The highest air temperature reached in each month."},
+  T2M_MIN:{n:"Coldest temperature", u:"°C", d:"The lowest air temperature reached in each month."},
+  TS:{n:"Surface temperature", u:"°C", d:"Temperature of the ground or sea surface itself, the 'skin' of the Earth."},
+  FROST_DAYS:{n:"Frost days", u:"days per year", agg:"sum", d:"Number of days when the temperature fell below freezing."},
+  CDD18_3:{n:"Cooling demand", u:"degree-days per year", agg:"sum", d:"How much and how often it was hotter than 18.3°C. A measure of the need for air conditioning."},
+  HDD18_3:{n:"Heating demand", u:"degree-days per year", agg:"sum", d:"How much and how often it was colder than 18.3°C. A measure of the need for heating."},
+  PRECTOTCORR:{n:"Precipitation", u:"mm/day", d:"Rain and melted snow, averaged per day."},
+  PRECSNOLAND:{n:"Snowfall", u:"mm/day", d:"Precipitation that falls as snow over land, as melted water per day."},
+  SNODP:{n:"Snow depth", u:"cm", d:"Depth of snow lying on the ground."},
+  GWETROOT:{n:"Root-zone soil wetness", u:"(0–1 scale)", d:"How wet the soil is where plant roots grow. 0 is completely dry, 1 is saturated."},
+  GWETTOP:{n:"Surface soil wetness", u:"(0–1 scale)", d:"How wet the top 5 cm of soil is. 0 is completely dry, 1 is saturated."},
+  EVLAND:{n:"Evaporation from land", u:"mm/day", d:"Water moving from soil and plants into the air."},
+  RH2M:{n:"Relative humidity", u:"%", d:"How much moisture the air holds compared with the most it could hold at that temperature."},
+  QV2M:{n:"Specific humidity", u:"g/kg", d:"Grams of water vapour in each kilogram of air. Unlike relative humidity it does not depend on temperature."},
+  TQV:{n:"Water vapour in the air column", u:"kg/m²", d:"All the water vapour in the atmosphere above one square metre of ground."},
+  WS2M:{n:"Wind speed near the ground", u:"m/s", d:"Average wind speed 2 metres above the ground."},
+  WS10M:{n:"Wind speed at 10 m", u:"m/s", d:"Average wind speed 10 metres above the ground, the standard height for wind measurements."},
+  ALLSKY_SFC_SW_DWN:{n:"Sunlight reaching the ground", u:"MJ/m²/day", d:"Solar energy arriving at the surface, after clouds and haze. Satellite data from 1984."},
+  CLOUD_AMT:{n:"Cloud cover", u:"%", d:"Share of the sky covered by cloud. Satellite data from 1984."},
+  AOD_55:{n:"Aerosol optical depth (haze)", u:"(unitless)", d:"How much dust, smoke and pollution particles block sunlight. Higher means hazier air. Data from 2001."},
+  TO3:{n:"Ozone layer", u:"Dobson units", d:"Total ozone in the atmosphere above the place. The ozone layer shields the surface from ultraviolet light."},
+  ALLSKY_SFC_UV_INDEX:{n:"UV index", u:"index", d:"Strength of sunburn-causing ultraviolet light at the surface. Data from 2001."}
+};
+const TOPICS = {
+  heat:{n:"Heat and cold", v:["T2M","T2M_MAX","T2M_MIN","FROST_DAYS"]},
+  water:{n:"Rain, snow and drought", v:["PRECTOTCORR","GWETROOT","EVLAND","SNODP"]},
+  air:{n:"Air and sky", v:["AOD_55","CLOUD_AMT","ALLSKY_SFC_SW_DWN","TO3"]},
+  plants:{n:"Plants and farming", v:["GWETROOT","FROST_DAYS","PRECTOTCORR","T2M_MAX"]},
+  energy:{n:"Energy use and wind", v:["CDD18_3","HDD18_3","WS10M","ALLSKY_SFC_SW_DWN"]}
+};
+const KINDS = {
+  city:{n:"Large city", add:{heat:["T2M_MIN","CDD18_3"], air:["AOD_55"], energy:["CDD18_3"]}, why:"Urban areas retain heat at night and emit particles. Minimum temperature, cooling demand and aerosols are the most relevant indicators."},
+  coast:{n:"Coast or estuary", add:{heat:["TS"], water:["TQV"], air:["WS10M"]}, why:"In coastal areas, surface temperature, atmospheric moisture and wind are the most relevant indicators."},
+  farm:{n:"Farmland", add:{heat:["FROST_DAYS"], water:["GWETROOT","EVLAND"], plants:["GWETTOP"]}, why:"For agriculture, soil wetness, evaporation and the number of frost days are the most relevant indicators."},
+  forest:{n:"Forest or rainforest", add:{water:["EVLAND","RH2M"], plants:["RH2M","EVLAND"]}, why:"Forests return large amounts of water to the atmosphere. Evaporation and humidity indicate changes in that cycle."},
+  desert:{n:"Desert or dry land", add:{heat:["T2M_MAX"], water:["GWETTOP","RH2M"], air:["AOD_55"]}, why:"In arid regions, maximum temperature, surface soil wetness and aerosols (dust) are the most relevant indicators."},
+  polar:{n:"Polar or mountain", add:{heat:["T2M_MIN","TS"], water:["SNODP","PRECSNOLAND"]}, why:"In cold regions, snow depth, snowfall and minimum temperature are the most relevant indicators."}
+};
+const PLACES = [
+  {n:"Boston, USA", lat:42.36, lon:-71.06, k:"city"},
+  {n:"Gulf of Maine (offshore)", lat:43.0, lon:-68.5, k:"coast"},
+  {n:"Utqiagvik, Arctic Alaska", lat:71.29, lon:-156.79, k:"polar"},
+  {n:"Phoenix, USA", lat:33.45, lon:-112.07, k:"desert"},
+  {n:"Central Valley, California", lat:36.6, lon:-119.9, k:"farm"},
+  {n:"Iowa corn belt, USA", lat:42.0, lon:-93.5, k:"farm"},
+  {n:"Manaus, Amazon rainforest", lat:-3.12, lon:-60.02, k:"forest"},
+  {n:"São Paulo, Brazil", lat:-23.55, lon:-46.63, k:"city"},
+  {n:"Niamey, Sahel (Niger)", lat:13.51, lon:2.11, k:"desert"},
+  {n:"Cape Town, South Africa", lat:-33.92, lon:18.42, k:"coast"},
+  {n:"Warsaw, Poland", lat:52.23, lon:21.01, k:"city"},
+  {n:"Seville, Spain", lat:37.39, lon:-5.98, k:"city"},
+  {n:"Delhi, India", lat:28.61, lon:77.21, k:"city"},
+  {n:"Beijing, China", lat:39.90, lon:116.40, k:"city"},
+  {n:"Perth, Australia", lat:-31.95, lon:115.86, k:"coast"},
+  {n:"Swiss Alps", lat:46.55, lon:8.0, k:"polar"},
+  {n:"Suva, Fiji", lat:-18.14, lon:178.44, k:"coast"},
+  {n:"Other location (enter coordinates)", custom:true}
+];
+const DEMOS = [
+  {t:"Is Boston warming?", s:"Air temperature, 1981–2025. Single-location analysis.", run:()=>{setCase(0,"city","heat","T2M"); showTab('one'); runOne();}},
+  {t:"Is the Arctic warming faster than Boston?", s:"Air temperature. Two-region comparison.", run:()=>{setCase(0,"city","heat","T2M"); $('placeA').value=2; $('placeB').value=0; showTab('two'); runTwo();}},
+  {t:"Where is rainfall changing in Africa?", s:"Precipitation. Regional map, 25 grid points.", run:()=>{setCase(8,"desert","water","PRECTOTCORR"); $('span').value="50"; $('grid').value="5"; showTab('map'); runMap();}},
+  {t:"Has haze over Beijing decreased?", s:"Aerosol optical depth, 2001–2025. Single-location analysis.", run:()=>{setCase(13,"city","air","AOD_55"); showTab('one'); runOne();}}
+];
+
+// ---------- Small helpers ----------
+const $ = id => document.getElementById(id);
+let curVar = "T2M";
+const fmt = (x, d=2) => (x===null||!isFinite(x)) ? "n/a" : (Math.abs(x) >= 100 ? x.toFixed(0) : Math.abs(x) >= 10 ? x.toFixed(1) : x.toFixed(d));
+const sgn = x => (x>0?"+":"") + fmt(x);
+const pfmt = p => p < 0.001 ? "less than 0.001" : p.toFixed(3);
+function showTab(t){ ["one","two","map","own","how"].forEach(k=>{ $('pane-'+k).classList.toggle('hide',k!==t); $('tab-'+k).classList.toggle('on',k===t); }); }
+function curPlace(sel='place'){ const p = PLACES[+$(sel).value]; if(p.custom) return {n:`${(+$('clat').value).toFixed(2)}°, ${(+$('clon').value).toFixed(2)}°`, lat:+$('clat').value, lon:+$('clon').value}; return p; }
+
+// ---------- Statistics ----------
+function lgamma(x){ const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5]; let y=x, t=x+5.5; t-=(x+0.5)*Math.log(t); let s=1.000000000190015; for(let j=0;j<6;j++) s+=c[j]/++y; return -t+Math.log(2.5066282746310005*s/x); }
+function betacf(a,b,x){ const FP=1e-30; let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap; if(Math.abs(d)<FP)d=FP; d=1/d; let h=d; for(let m=1;m<=200;m++){ const m2=2*m; let aa=m*(b-m)*x/((qam+m2)*(a+m2)); d=1+aa*d; if(Math.abs(d)<FP)d=FP; c=1+aa/c; if(Math.abs(c)<FP)c=FP; d=1/d; h*=d*c; aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2)); d=1+aa*d; if(Math.abs(d)<FP)d=FP; c=1+aa/c; if(Math.abs(c)<FP)c=FP; d=1/d; const del=d*c; h*=del; if(Math.abs(del-1)<3e-12) break; } return h; }
+function betai(a,b,x){ if(x<=0) return 0; if(x>=1) return 1; const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x)); return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b; }
+function tTwoSidedP(t,df){ return betai(df/2,0.5,df/(df+t*t)); }
+function tCrit(df,alpha=0.05){ let lo=0,hi=50; for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(tTwoSidedP(m,df)>alpha) lo=m; else hi=m; } return (lo+hi)/2; }
+function normCdf(z){ const t=1/(1+0.2316419*Math.abs(z)); const d=0.3989422804014327*Math.exp(-z*z/2); const p=d*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429)))); return z>0?1-p:p; }
+const mean = a => a.reduce((s,v)=>s+v,0)/a.length;
+function median(a){ const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+
+function ols(x,y){ const n=x.length, mx=mean(x), my=mean(y); let sxx=0,sxy=0; for(let i=0;i<n;i++){ sxx+=(x[i]-mx)**2; sxy+=(x[i]-mx)*(y[i]-my); } const slope=sxy/sxx, icpt=my-slope*mx; let sse=0; const res=[]; for(let i=0;i<n;i++){ const r=y[i]-(icpt+slope*x[i]); res.push(r); sse+=r*r; } const df=n-2, se=Math.sqrt(sse/df/sxx), t=slope/se, p=se===0?0:tTwoSidedP(t,df), tc=tCrit(df); let num=0,den=0; for(let i=0;i<n;i++){ den+=res[i]*res[i]; if(i) num+=res[i]*res[i-1]; } return {slope,icpt,se,t,p,lo:slope-tc*se,hi:slope+tc*se,df,r1:den?num/den:0}; }
+
+function mannKendall(x,y){ const n=y.length; let S=0; const slopes=[]; for(let i=0;i<n-1;i++) for(let j=i+1;j<n;j++){ S+=Math.sign(y[j]-y[i]); slopes.push((y[j]-y[i])/(x[j]-x[i])); } const counts={}; y.forEach(v=>counts[v]=(counts[v]||0)+1); let tie=0; Object.values(counts).forEach(t=>{ if(t>1) tie+=t*(t-1)*(2*t+5); }); const varS=(n*(n-1)*(2*n+5)-tie)/18; const z = S>0 ? (S-1)/Math.sqrt(varS) : S<0 ? (S+1)/Math.sqrt(varS) : 0; const p=2*(1-normCdf(Math.abs(z))); slopes.sort((a,b)=>a-b); const N=slopes.length, C=1.959964*Math.sqrt(varS); const m1=Math.max(0,Math.round((N-C)/2)-1), m2=Math.min(N-1,Math.round((N+C)/2)); return {S,z,p,tau:S/(n*(n-1)/2),sen:median(slopes),senLo:slopes[m1],senHi:slopes[m2]}; }
+
+// monthly: [{y,m,v}] with v possibly null. agg: "mean" or "sum".
+function analyze(monthly, agg="mean"){
+  const clim=Array(13).fill(0), cn=Array(13).fill(0);
+  monthly.forEach(r=>{ if(r.v!==null){ clim[r.m]+=r.v; cn[r.m]++; } });
+  for(let m=1;m<=12;m++) clim[m]=cn[m]?clim[m]/cn[m]:null;
+  const anom=monthly.map(r=>({...r, a:(r.v===null||clim[r.m]===null)?null:r.v-clim[r.m]}));
+  const by={}; monthly.forEach(r=>{ if(r.v!==null) (by[r.y]=by[r.y]||[]).push(r.v); });
+  const years=[], vals=[];
+  Object.keys(by).map(Number).sort((a,b)=>a-b).forEach(y=>{ if(by[y].length===12){ years.push(y); vals.push(agg==="sum" ? by[y].reduce((s,v)=>s+v,0) : mean(by[y])); } });
+  if(years.length<10) throw new Error("Fewer than 10 complete years of data, which is too short for a trend test.");
+  const o=ols(years,vals), mk=mannKendall(years,vals);
+  const sig = o.p<0.05 && mk.p<0.05, partial = !sig && (o.p<0.05 || mk.p<0.05);
+  const dir = mk.sen>0 ? "up" : mk.sen<0 ? "down" : "flat";
+  let moreYears=null;
+  if(!sig && Math.abs(o.t)>0.3){ const need=years.length*Math.pow(tCrit(o.df)/Math.abs(o.t),2/3); moreYears=Math.max(1,Math.ceil(need-years.length)); }
+  const base=mean(vals), total=mk.sen*(years[years.length-1]-years[0]);
+  return {years,vals,anom,o,mk,sig,partial,dir,moreYears,base,total,n:years.length};
+}
+
+// ---------- Data ----------
+const cache = new Map();
+async function fetchPower(lat, lon, v){
+  const key=`${lat.toFixed(2)},${lon.toFixed(2)},${v}`;
+  if(cache.has(key)) return cache.get(key);
+  const url=`https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=${v}&community=AG&longitude=${lon.toFixed(3)}&latitude=${lat.toFixed(3)}&start=1981&end=2025&format=JSON`;
+  let lastErr;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const r=await fetch(url);
+      if(!r.ok) throw new Error("NASA POWER returned status "+r.status);
+      const j=await r.json(), raw=j.properties.parameter[v], out=[];
+      Object.keys(raw).forEach(k=>{ const m=+k.slice(4); if(m>=1&&m<=12){ const val=raw[k]; out.push({y:+k.slice(0,4), m, v:(val===-999||val===null)?null:val}); } });
+      out.sort((a,b)=>a.y-b.y||a.m-b.m);
+      cache.set(key,out); return out;
+    }catch(e){ lastErr=e; await new Promise(res=>setTimeout(res,800*(attempt+1))); }
+  }
+  throw lastErr;
+}
+
+// ---------- Wording ----------
+function verdictHtml(res, v, placeName){
+  const V=VARS[v]||{n:v,u:""}, noun=V.n.toLowerCase(), rate=`${sgn(res.mk.sen*10)} ${V.u} per decade`, span=`${res.years[0]}–${res.years[res.n-1]}`;
+  let head, body, cls;
+  if(res.sig){ cls=res.dir; head=`Statistically significant ${res.dir==="up"?"increase":"decrease"} in ${noun}`; body=`Rate of change: ${rate}. Total change: ${sgn(res.total)} ${V.u} over ${span}. Both tests give p below 0.05, so a trend of this size is unlikely to be due to chance alone.`; }
+  else if(res.partial){ cls="none"; head=`Inconclusive result for ${noun}`; body=`Estimated rate of change: ${rate}. Only one of the two tests gives p below 0.05, so the evidence for a trend is weak.`; }
+  else { cls="none"; head=`No statistically significant trend in ${noun}`; body=`Estimated rate of change: ${rate}. Year-to-year variability is too large to distinguish this from no change.`; if(res.moreYears && res.moreYears<=60) body+=` At the same rate and variability, about ${res.moreYears} more years of data would be needed to reach significance (approximate).`; }
+  let warn="";
+  if(res.o.r1>0.4) warn=`<p class="note"><b>Autocorrelation:</b> consecutive years are correlated (lag-1 coefficient ${fmt(res.o.r1)}). The p-values are therefore likely to be too small.</p>`;
+  return `<div class="verdict ${cls}"><div class="big">${head}</div><div>${placeName ? "<b>"+placeName+".</b> " : ""}${body}</div></div>${warn}`;
+}
+function statsTable(res, v){
+  const V=VARS[v]||{u:""};
+  return `<div class="scroll"><table class="st">
+  <tr><th>Statistic</th><th>Result</th><th>Interpretation</th></tr>
+  <tr><td>Sen's slope</td><td class="num">${sgn(res.mk.sen*10)} ${V.u} per decade<br><span class="note">95% CI ${sgn(res.mk.senLo*10)} to ${sgn(res.mk.senHi*10)}</span></td><td>Median rate of change. ${res.mk.senLo*res.mk.senHi>0?"The interval excludes zero.":"The interval includes zero."}</td></tr>
+  <tr><td>Least-squares slope</td><td class="num">${sgn(res.o.slope*10)} ${V.u} per decade<br><span class="note">95% CI ${sgn(res.o.lo*10)} to ${sgn(res.o.hi*10)}</span></td><td>Rate from ordinary linear regression, as a second estimate.</td></tr>
+  <tr><td>Mann-Kendall test</td><td class="num">p = ${pfmt(res.mk.p)}<br><span class="note">Kendall's tau = ${fmt(res.mk.tau)}</span></td><td>Tests for a consistent upward or downward tendency without assuming a straight line. ${res.mk.p<0.05?"Significant at the 0.05 level.":"Not significant at the 0.05 level."}</td></tr>
+  <tr><td>t-test on slope</td><td class="num">p = ${pfmt(res.o.p)}<br><span class="note">t = ${fmt(res.o.t)}, ${res.o.df} d.f.</span></td><td>Tests whether the least-squares slope differs from zero. ${res.o.p<0.05?"Significant at the 0.05 level.":"Not significant at the 0.05 level."}</td></tr>
+  <tr><td>Record</td><td class="num">${res.n} complete years<br><span class="note">${res.years[0]}–${res.years[res.n-1]}</span></td><td>Long-term mean: ${fmt(res.base)} ${V.u}</td></tr>
+  </table></div>`;
+}
+
+// ---------- Charts ----------
+const C = {up:"#d92d14", down:"#0b3d91", none:"#5c5c5c", obs:"#8d9297", a:"#00857d", b:"#7a3fb3", grid:"#e6e7e8", ink:"#1b1b1b"};
+const SCALE = [[0,"#0b3d91"],[0.25,"#6f93cf"],[0.5,"#f2f2f2"],[0.75,"#ee8a78"],[1,"#d92d14"]];
+const AX = {gridcolor:C.grid, linecolor:"#a9aeb1", zeroline:false, ticks:"outside", tickcolor:"#a9aeb1", tickfont:{family:'"DM Mono", Menlo, monospace', size:12}};
+const LAYOUT = {margin:{l:60,r:15,t:38,b:44}, paper_bgcolor:"#fff", plot_bgcolor:"#fff", font:{family:'Inter, "Helvetica Neue", Arial, sans-serif', size:13, color:C.ink}, legend:{orientation:"h", y:-0.2}, xaxis:{...AX}, yaxis:{...AX}};
+const L = () => JSON.parse(JSON.stringify(LAYOUT));
+const TITLE = t => ({text:t, font:{size:15, color:C.ink}, x:0, xanchor:"left", pad:{l:4}});
+function chartAnnual(div, res, v){
+  const V=VARS[v]||{n:v,u:""}, col = res.sig ? (res.dir==="up"?C.up:C.down) : C.none;
+  const my=median(res.vals.map((y,i)=>y-res.mk.sen*res.years[i]));
+  const line=res.years.map(y=>my+res.mk.sen*y);
+  Plotly.newPlot(div,[
+    {x:res.years,y:res.vals,mode:"lines+markers",name:"Annual value",line:{color:C.obs,width:1.5},marker:{size:5,color:C.obs}},
+    {x:res.years,y:line,mode:"lines",name:`Sen's slope: ${sgn(res.mk.sen*10)} per decade${res.sig?"":" (not significant)"}`,line:{color:col,width:3,dash:res.sig?"solid":"dash"}}
+  ],{...L(),title:TITLE(`${V.n}, annual values (${V.u})`),yaxis:{...L().yaxis,title:{text:V.u,font:{size:12}}}},{displayModeBar:false,responsive:true});
+}
+function chartMonthly(div, res, v, deseason){
+  const V=VARS[v]||{n:v,u:""}; const x=res.anom.map(r=>`${r.y}-${String(r.m).padStart(2,"0")}-15`);
+  const y=res.anom.map(r=>deseason?r.a:r.v);
+  Plotly.newPlot(div,[{x,y,mode:"lines",line:{color:C.down,width:1},name:deseason?"Monthly anomaly":"Monthly value"}],
+    {...L(),title:TITLE(deseason?`${V.n}, monthly anomalies (${V.u})`:`${V.n}, monthly values (${V.u})`),showlegend:false},{displayModeBar:false,responsive:true});
+}
+
+// ---------- Actions ----------
+function busy(id,on){ $(id).disabled=on; }
+function errBox(e){ return `<p class="err">The analysis could not be completed: ${e.message||e}</p><p class="note">Check the internet connection and run the analysis again. The NASA POWER service occasionally fails to respond.</p>`; }
+
+let lastOne=null;
+async function runOne(){
+  const p=curPlace(), v=curVar, V=VARS[v], out=$('oneOut');
+  busy('runOne',true); out.innerHTML=`<p class="note">Retrieving ${V.n.toLowerCase()} for ${p.n} from NASA POWER…</p>`;
+  try{
+    const data=await fetchPower(p.lat,p.lon,v), res=analyze(data,V.agg);
+    lastOne={res,v};
+    out.innerHTML=`<p style="margin-top:14px"><span class="pill">${p.n}</span><span class="pill">${V.n}</span><span class="pill">${p.lat.toFixed(2)}°, ${p.lon.toFixed(2)}°</span><span class="pill">NASA POWER</span></p>
+      <p class="note"><b>${V.n}:</b> ${V.d}</p>${verdictHtml(res,v)}
+      <div id="chA" style="height:340px"></div>
+      <h3>Statistical results</h3>${statsTable(res,v)}
+      <h3>Monthly series</h3>
+      <label class="plain"><input type="checkbox" id="des" checked onchange="chartMonthly('chM',lastOne.res,lastOne.v,this.checked)"> Remove the seasonal cycle</label>
+      <div id="chM" style="height:300px"></div>
+      <p class="note">With the seasonal cycle removed, each point is the departure from the long-term mean for that calendar month.</p>
+      <p style="margin-top:14px"><button class="ghost" onclick="showTab('map');runMap()">Map this variable around ${p.n}</button></p>`;
+    chartAnnual('chA',res,v); chartMonthly('chM',res,v,true);
+  }catch(e){ out.innerHTML=errBox(e); }
+  busy('runOne',false);
+}
+
+async function compare(A,B,v,out){
+  const V=VARS[v], cid="chC_"+out.id;
+  out.innerHTML=`<p class="note">Retrieving ${V.n.toLowerCase()} for both regions from NASA POWER…</p>`;
+  const [dA,dB]=await Promise.all([fetchPower(A.lat,A.lon,v),fetchPower(B.lat,B.lon,v)]);
+  const rA=analyze(dA,V.agg), rB=analyze(dB,V.agg);
+  let msg, cls="none";
+  const opp = rA.mk.sen*rB.mk.sen<0;
+  if(opp && rA.sig && rB.sig){ cls="mix"; msg=`<div class="big">Significant trends in opposite directions</div>${V.n} is ${rA.dir==="up"?"increasing":"decreasing"} at ${A.n} and ${rB.dir==="up"?"increasing":"decreasing"} at ${B.n}. Both trends are significant in both tests.`; }
+  else if(opp){ msg=`<div class="big">Opposite directions, not both significant</div>The estimated trends have opposite signs, but at least one of them is not statistically significant.`; }
+  else if(rA.sig && rB.sig){ const f=Math.abs(rA.mk.sen)>Math.abs(rB.mk.sen)?[A,rA,B,rB]:[B,rB,A,rA]; const ratio=Math.abs(f[1].mk.sen/f[3].mk.sen); cls=rA.dir; msg=`<div class="big">Significant ${rA.dir==="up"?"increase":"decrease"} in both regions</div>The rate at ${f[0].n} is ${isFinite(ratio)?fmt(ratio,1)+" times":"much greater than"} the rate at ${f[2].n}.`; }
+  else { msg=`<div class="big">Same direction, not both significant</div>The estimated trends have the same sign, but at least one of them is not statistically significant.`; }
+  out.innerHTML=`<p style="margin-top:14px"><span class="pill">${V.n}</span></p><p class="note"><b>${V.n}:</b> ${V.d}</p>
+    <div class="verdict ${cls}">${msg}</div><div id="${cid}" style="height:340px"></div>
+    <div class="two"><div><h3><span class="sw" style="background:${C.a}"></span>${A.n}</h3>${verdictHtml(rA,v)}${statsTable(rA,v)}</div><div><h3><span class="sw" style="background:${C.b}"></span>${B.n}</h3>${verdictHtml(rB,v)}${statsTable(rB,v)}</div></div>
+    <p class="note">Values are plotted as departures from each region's own long-term mean, so that regions with different climates share one scale. Solid trend lines are significant; dashed lines are not.</p>`;
+  const tr=(r,name,col)=>[{x:r.years,y:r.vals.map(x=>x-r.base),mode:"lines+markers",name,line:{color:col,width:1.5},marker:{size:4}},{x:r.years,y:r.years.map(y=>r.mk.sen*(y-mean(r.years))),mode:"lines",name:`${name} trend`,line:{color:col,width:3,dash:r.sig?"solid":"dash"},showlegend:false}];
+  Plotly.newPlot(cid,[...tr(rA,A.n,C.a),...tr(rB,B.n,C.b)],{...L(),title:TITLE(`${V.n}, annual departure from each region's mean (${V.u})`)},{displayModeBar:false,responsive:true});
+}
+async function runTwo(){ busy('runTwo',true); try{ await compare(curPlace('placeA'),curPlace('placeB'),curVar,$('twoOut')); }catch(e){ $('twoOut').innerHTML=errBox(e); } busy('runTwo',false); }
+
+let scanPts=[];
+async function runMap(){
+  const p=curPlace(), v=curVar, V=VARS[v], span=+$('span').value, g=+$('grid').value, out=$('mapOut');
+  busy('runMap',true);
+  const pts=[]; for(let i=0;i<g;i++) for(let j=0;j<g;j++){ const lat=Math.max(-88,Math.min(88,p.lat-span/2+span*i/(g-1))); let lon=p.lon-span*0.75+span*1.5*j/(g-1); lon=((lon+540)%360)-180; pts.push({lat,lon}); }
+  out.innerHTML=`<p class="note" id="scanMsg">Retrieving and testing ${pts.length} grid points around ${p.n}…</p><progress id="scanBar" max="${pts.length}" value="0"></progress>`;
+  let done=0, idx=0; const results=[];
+  async function worker(){ while(idx<pts.length){ const q=pts[idx++]; try{ const r=analyze(await fetchPower(q.lat,q.lon,v),V.agg); results.push({...q,r}); }catch(e){} done++; const b=$('scanBar'); if(b) b.value=done; } }
+  await Promise.all([worker(),worker(),worker(),worker(),worker()]);
+  if(results.length<3){ out.innerHTML=errBox(new Error("Too few points returned data.")); busy('runMap',false); return; }
+  const dec=results.map(q=>q.r.mk.sen*10), mx=Math.max(...dec.map(Math.abs))||1;
+  const sigs=results.filter(q=>q.r.sig), ups=sigs.filter(q=>q.r.dir==="up").sort((a,b)=>b.r.mk.sen-a.r.mk.sen), downs=sigs.filter(q=>q.r.dir==="down").sort((a,b)=>a.r.mk.sen-b.r.mk.sen);
+  const nUp=ups.length, nDown=downs.length, nNo=results.length-sigs.length;
+  let find, cls="none";
+  if(nUp&&nDown){ cls="mix"; find=`<div class="big">Significant trends in both directions</div>${V.n} shows a significant increase at ${nUp} of ${results.length} grid points and a significant decrease at ${nDown}. The remaining ${nNo} show no significant trend.`; }
+  else if(nUp||nDown){ cls=nUp?"up":"down"; find=`<div class="big">Significant ${nUp?"increase":"decrease"} in ${V.n.toLowerCase()}</div>${nUp||nDown} of ${results.length} grid points show a significant ${nUp?"increase":"decrease"}. The remaining ${nNo} show no significant trend, and none shows a significant ${nUp?"decrease":"increase"}.`; }
+  else find=`<div class="big">No significant trends in this area</div>None of the ${results.length} grid points is significant in both tests.`;
+  const label=q=>`${Math.abs(q.lat).toFixed(1)}°${q.lat>=0?"N":"S"}, ${Math.abs(q.lon).toFixed(1)}°${q.lon>=0?"E":"W"}`;
+  scanPts=[];
+  let btn="";
+  if(nUp&&nDown){ scanPts=[{n:label(ups[0]),lat:ups[0].lat,lon:ups[0].lon},{n:label(downs[0]),lat:downs[0].lat,lon:downs[0].lon}]; btn=`<p><button onclick="scanCompare()">Compare the strongest increase and the strongest decrease</button></p>`; }
+  out.innerHTML=`<p style="margin-top:14px"><span class="pill">${V.n}</span><span class="pill">Centred on ${p.n}</span><span class="pill">${results.length} grid points</span></p><div class="verdict ${cls}">${find}</div>${btn}<div id="chMap" style="height:480px"></div>
+    <p class="note">Red indicates an increase and blue a decrease. Large filled markers are significant in both tests; small open markers are not. Hover over a marker for its values. Grid points without data for this variable, such as ocean points for soil variables, are omitted. With many points tested, about 1 in 20 is expected to appear significant by chance, so clusters of significant points are stronger evidence than isolated ones.</p><div id="scanCmp"></div>`;
+  const mk=(arr,solid)=>({type:"scattergeo",lat:arr.map(q=>q.lat),lon:arr.map(q=>q.lon),mode:"markers",showlegend:false,
+    text:arr.map(q=>`${label(q)}<br>${sgn(q.r.mk.sen*10)} ${V.u} per decade<br>Mann-Kendall p = ${pfmt(q.r.mk.p)}<br>t-test p = ${pfmt(q.r.o.p)}<br>${q.r.sig?"Significant":"Not significant"}`),hoverinfo:"text",
+    marker:{size:solid?20:11,symbol:solid?"circle":"circle-open",color:arr.map(q=>q.r.mk.sen*10),cmin:-mx,cmax:mx,colorscale:SCALE,line:{width:solid?1:2.5,color:solid?"#1b1b1b":undefined},
+      colorbar:solid?{title:{text:`${V.u}<br>per decade`},thickness:12,len:0.7}:undefined,showscale:solid}});
+  const sigSet=results.filter(q=>q.r.sig), nonSet=results.filter(q=>!q.r.sig);
+  const traces=[mk(nonSet,false)]; if(sigSet.length) traces.push(mk(sigSet,true)); else traces[0].marker.showscale=true, traces[0].marker.colorbar={title:{text:`${V.u}<br>per decade`},thickness:12,len:0.7};
+  const lats=results.map(q=>q.lat), lons=results.map(q=>q.lon), pad=span*0.12;
+  Plotly.newPlot('chMap',traces,{...L(),margin:{l:0,r:0,t:10,b:0},geo:{projection:{type:"mercator"},showland:true,landcolor:"#f4f4f2",showocean:true,oceancolor:"#dfe7f1",showcountries:true,countrycolor:"#b5b9be",coastlinecolor:"#6b7178",resolution:50,
+    lataxis:{range:[Math.max(-85,Math.min(...lats)-pad),Math.min(85,Math.max(...lats)+pad)]},lonaxis:{range:[Math.min(...lons)-pad,Math.max(...lons)+pad]}}},{displayModeBar:false,responsive:true});
+  busy('runMap',false);
+}
+async function scanCompare(){ const out=$('scanCmp'); try{ await compare(scanPts[0],scanPts[1],curVar,out); out.scrollIntoView({behavior:"smooth"}); }catch(e){ out.innerHTML=errBox(e); } }
+
+function parseCsv(text){
+  const rows=[]; const lines=text.split(/\r?\n/);
+  for(const line of lines){ const parts=line.split(/[,;\t]/).map(s=>s.trim().replace(/^"|"$/g,"")); if(parts.length<2) continue;
+    const m=parts[0].match(/^(\d{4})[-\/]?(\d{1,2})?/); if(!m) continue; const val=parseFloat(parts[1]); if(!isFinite(val)) continue;
+    rows.push({y:+m[1], m:m[2]?+m[2]:null, v:(val<=-999||Math.abs(val)>1e30)?null:val}); }
+  return rows;
+}
+function runOwn(){
+  const f=$('ownFile').files[0], out=$('ownOut'); if(!f){ out.innerHTML=`<p class="err">Select a CSV file first.</p>`; return; }
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    let rows=parseCsv(rd.result); if(rows.length<10) throw new Error("No date column followed by a value column was found in the file.");
+    const by={}; rows.forEach(r=>{ if(r.v===null) return; const k=r.y+"-"+(r.m||0); (by[k]=by[k]||{y:r.y,m:r.m,a:[]}).a.push(r.v); });
+    let monthly=Object.values(by).map(o=>({y:o.y,m:o.m,v:mean(o.a)}));
+    if(monthly.every(r=>r.m===null)){ monthly=monthly.flatMap(r=>Array.from({length:12},(_,i)=>({y:r.y,m:i+1,v:r.v}))); }
+    monthly.sort((a,b)=>a.y-b.y||a.m-b.m);
+    const name=$('ownName').value.trim()||f.name; VARS.__own={n:name,u:"(file units)",d:"Imported time series."};
+    const res=analyze(monthly); lastOne={res,v:"__own"};
+    out.innerHTML=`${verdictHtml(res,"__own")}<div id="chO" style="height:340px"></div>${statsTable(res,"__own")}`;
+    chartAnnual('chO',res,"__own");
+  }catch(e){ out.innerHTML=errBox(e); } };
+  rd.readAsText(f);
+}
+
+// ---------- Setup ----------
+function suggestions(){ const k=$('kind').value, t=$('topic').value; const extra=(KINDS[k].add[t]||[]); return [...new Set([...extra,...TOPICS[t].v])].slice(0,4); }
+function renderChips(keep){
+  const s=suggestions(); if(!keep || !VARS[curVar]) curVar=s[0];
+  $('whyText').textContent=KINDS[$('kind').value].why;
+  $('chips').innerHTML=s.map(v=>`<button class="chip ${v===curVar?"on":""}" onclick="pickVar('${v}')"><b>${VARS[v].n} <span>(${VARS[v].u})</span></b><span>${VARS[v].d}</span></button>`).join("");
+  $('allVars').value=curVar;
+}
+function pickVar(v){ curVar=v; renderChips(true); }
+function setCase(placeIdx,kind,topic,v){ $('place').value=placeIdx; $('customBox').classList.add('hide'); $('kind').value=kind; $('topic').value=topic; curVar=v; renderChips(true); }
+function init(){
+  const opts=PLACES.map((p,i)=>`<option value="${i}">${p.n}</option>`).join("");
+  $('place').innerHTML=opts; $('placeA').innerHTML=opts; $('placeB').innerHTML=opts; $('placeA').value=2; $('placeB').value=0;
+  $('kind').innerHTML=Object.entries(KINDS).map(([k,o])=>`<option value="${k}">${o.n}</option>`).join("");
+  $('topic').innerHTML=Object.entries(TOPICS).map(([k,o])=>`<option value="${k}">${o.n}</option>`).join("");
+  $('allVars').innerHTML=Object.entries(VARS).map(([k,o])=>`<option value="${k}">${o.n} (${o.u})</option>`).join("");
+  $('place').onchange=()=>{ const p=PLACES[+$('place').value]; $('customBox').classList.toggle('hide',!p.custom); if(p.k){ $('kind').value=p.k; } renderChips(false); };
+  $('kind').onchange=()=>renderChips(false); $('topic').onchange=()=>renderChips(false);
+  $('allVars').onchange=()=>{ curVar=$('allVars').value; renderChips(true); };
+  $('demos').innerHTML=DEMOS.map((d,i)=>`<div><button class="chip" style="width:100%;height:100%" onclick="DEMOS[${i}].run()"><b>${d.t}</b><span>${d.s}</span></button></div>`).join("");
+  renderChips(false);
+}
+init();
+</script>
+</body>
+</html>
